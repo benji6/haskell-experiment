@@ -3,7 +3,7 @@ module Main (main) where
 import Data.Char (isLetter, isNumber)
 import Data.List (intersperse)
 
-sourceCode = "(map (comp double (add 12) (sub 1) xs)"
+sourceCode   = "(map (comp double (add 12) (sub 1) xs)"
 expectedCode = "map(comp(double, add(12), sub(1), xs))"
 
 data Token = TIdentifier String
@@ -33,12 +33,13 @@ tokenize (x : xs)
   | otherwise  = undefined
 
 data Grammar = CallExpression [Grammar]
+             | CommaHack
              | Identifier String
              | NumberLiteral String deriving (Show)
 
 extractCallExpression :: [Token] -> Int -> [Token]
-extractCallExpression [] _ = []
-extractCallExpression (TParensLeft : xs) bracketOffset = TParensLeft : extractCallExpression xs (bracketOffset + 1)
+extractCallExpression [] _                              = []
+extractCallExpression (TParensLeft : xs) bracketOffset  = TParensLeft : extractCallExpression xs (bracketOffset + 1)
 extractCallExpression (TParensRight : xs) bracketOffset = if bracketOffset == 1
                                                           then []
                                                           else TParensRight : extractCallExpression xs (bracketOffset - 1)
@@ -55,11 +56,6 @@ parse (TIdentifier x : xs) = Identifier x : parse xs
 parse (TNumber x : xs)     = NumberLiteral x : parse xs
 parse (_ : xs)             = parse xs
 
-generateArgs :: [Grammar] -> String
-generateArgs (Identifier x : xs)    = concat [x, ", ", generateArgs xs]
-generateArgs (NumberLiteral x : xs) = concat [x, ", ", generateArgs xs]
-generateArgs x = generate x
-
 generateCallee :: Grammar -> String
 generateCallee (Identifier a) = a ++ "("
 
@@ -67,10 +63,11 @@ generate :: [Grammar] -> String
 generate []                         = []
 generate (CallExpression args : xs) = concat [
     generateCallee $ head args,
-    generateArgs $ tail args,
+    generate (intersperse CommaHack (tail args)),
     ")",
     generate xs
   ]
+generate (CommaHack : xs)           = ", " ++ generate xs
 generate (Identifier x : xs)        = x ++ generate xs
 generate (NumberLiteral x : xs)     = x ++ generate xs
 
