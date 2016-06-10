@@ -36,9 +36,21 @@ data Grammar = CallExpression [Grammar]
              | Identifier String
              | NumberLiteral String deriving (Show)
 
+extractCallExpression :: [Token] -> Int -> [Token]
+extractCallExpression [] _ = []
+extractCallExpression (TParensLeft : xs) bracketOffset = TParensLeft : extractCallExpression xs (bracketOffset + 1)
+extractCallExpression (TParensRight : xs) bracketOffset = if bracketOffset == 1
+                                                          then []
+                                                          else TParensRight : extractCallExpression xs (bracketOffset - 1)
+extractCallExpression (x : xs) bracketOffset = x : extractCallExpression xs bracketOffset
+
+parseCallExpression :: [Token] -> [Grammar]
+parseCallExpression xs = [CallExpression $ parse $ callExpression] ++ parse (drop (length callExpression) xs)
+  where callExpression = extractCallExpression xs 1
+
 parse :: [Token] -> [Grammar]
 parse []                   = []
-parse (TParensLeft : xs)   = [CallExpression (parse xs)]
+parse (TParensLeft : xs)   = parseCallExpression xs
 parse (TIdentifier x : xs) = Identifier x : parse xs
 parse (TNumber x : xs)     = NumberLiteral x : parse xs
 parse (_ : xs)             = parse xs
