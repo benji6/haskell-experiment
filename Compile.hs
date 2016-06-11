@@ -2,22 +2,19 @@ module Compile (compile) where
 
 import Data.Char (isLetter, isNumber, isSpace)
 import Data.List (intersperse)
-import Utils (splitWhen)
 
 data Token = TIdentifier String
            | TNumber String
            | TParensLeft
            | TParensRight deriving (Show)
 
-
-
 tokenizeLetters :: String -> [Token]
 tokenizeLetters str = TIdentifier a : tokenize b
-  where (a, b) = splitWhen isLetter str
+  where (a, b) = span isLetter str
 
 tokenizeNumbers :: String -> [Token]
 tokenizeNumbers str = TNumber a : tokenize b
-  where (a, b) = splitWhen isNumber str
+  where (a, b) = span isNumber str
 
 tokenize :: String -> [Token]
 tokenize []         = []
